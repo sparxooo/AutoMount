@@ -5,7 +5,7 @@ This plugin was a quick mockup to see how easy it would be to add disk image aut
 
 The plugin can use either WinCDEmu installed (http://wincdemu.sysprogs.org/), or the Windows Virtual Disk API to mount the ISO file.
 * WinCDEmu if installed with the option "Require UAC Administrator" unchecked can mount files without being run as admin.
-* Windows API will only function on **Windows 8 and above**. Unfortunately the Windows API also **restricts ISO mounting to programs run as UAC Adminstrator ** and also can only mount ISO files.
+* Windows API will only function on **Windows 8 and above**. Unfortunately the Windows API also **restricts ISO mounting to programs run as UAC Adminstrator** and also can only mount ISO files.
 
 The plugin will attempt to mount a game image for any game that has a "Platform" set as PC, and an Action of "Executable", and it attempts to always mount the disk to the set drive letter (in settings). If the drive letter is not free, mounting will fail. This plugin may not work correctly at present for all games depending upon how quickly they launch. WinCDEmu is MUCH faster at mounting an image than the Windows API.
 
@@ -20,7 +20,7 @@ The plugin will attempt to mount a game image for any game that has a "Platform"
 
 # Future ideas
 * This may not work for all games at present, there is no feature in the Playnite SDK to pause execution of a game until a CD image is mounted.
-* Per-game settings (either plugin based, or a feature in the Playnite SDK)
+* Per-game settings (either plugin based, or per a future feature in the Playnite SDK)
 * Removal of Windows API image mounting (as SLOW and unreliable/hacky).
 
 # Compiling
