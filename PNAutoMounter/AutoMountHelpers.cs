@@ -17,10 +17,10 @@ namespace PNAutoMounter
         {
             // There may be a better way to do this...
             List<string> freeDriveLetters = new List<string>();
-            // Add all drive letters to list
+            // Add all drive letters to list (capitals)
             for(int i = 65; i < 91; i++)
             {
-                freeDriveLetters.Add(String.Format("{0}:\\", Convert.ToChar(i)));
+                freeDriveLetters.Add(String.Format("{0}:", Convert.ToChar(i)));
             }
 
             DriveInfo[] drives = DriveInfo.GetDrives();
@@ -34,7 +34,7 @@ namespace PNAutoMounter
         }
 
         /// <summary>
-        /// Checks if a drive letter is free
+        /// Checks if a drive letter is free, (Drive letter e.g. D:)
         /// </summary>
         /// <param name="drive">Drive Letter</param>
         /// <returns>
@@ -44,14 +44,7 @@ namespace PNAutoMounter
         internal static bool IsDriveLetterFree(string drive)
         {
             List<String> freeDriveLetters = GetFreeDriveLetters();
-            if (freeDriveLetters.Contains(drive))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return freeDriveLetters.Contains(drive.ToUpper()); // ensure drive is uppercase for comparison
         }
     }
 }

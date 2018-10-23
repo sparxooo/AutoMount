@@ -16,11 +16,24 @@
         <TextBlock Margin="0 10 0 0"><Run Text="Assigned Drive Letter:"/><InlineUIContainer>
                 <ComboBox Margin="10 -5" x:Name="ComboAssignedDrive" SelectionChanged="ComboAssignedDrive_SelectionChanged" />
             </InlineUIContainer> <InlineUIContainer> <Button Name="MountISOBrowse"  Margin="10 -5" Content="Mount ISO (Browse)" Click="Button_Click" /></InlineUIContainer></TextBlock>
+        <TextBlock Margin="0 10 0 0">CD Mounting Engine: <ComboBox Name="ComboEngine" Margin="10 -5" SelectionChanged="ComboEngine_SelectionChanged"></ComboBox></TextBlock>
+
+        <TextBlock Margin="0 10 0 0">WinCDEmu Path: <TextBox Name="TextWinCDEmuPath" Margin="10 -5" Width="300" Text="{Binding WinCDEmuLocation}" IsReadOnly="True"/><Button Name="ButtonWinCDEmuBrowse" Margin="10, -5" Content="Browse" Click="ButtonWinCDEmuBrowse_Click"/></TextBlock>
+
+
+
         <TextBlock Margin="0 10 0 0" FontSize="14">
             Important Information: 
         </TextBlock>
         <TextBlock TextWrapping="Wrap">
             It is important to choose a drive letter that will always be free (E.g. Z:\), as some games may save where they have been installed from, and not enumerate all drives to find where their install disk is.
+        </TextBlock>
+        <TextBlock Margin="0 10 0 0" FontSize="14">
+            CD Mounting Engine:
+        </TextBlock>
+        <TextBlock TextWrapping="Wrap">
+            It is recommended to use WinCDEmu (if installed) for quicker mounting and greater compatibility with CD image files.<LineBreak/><LineBreak/>            
+            Windows Virtual Disk mounting is left for compatibility, but requires administrator rights.
         </TextBlock>
     </StackPanel>
 </UserControl>

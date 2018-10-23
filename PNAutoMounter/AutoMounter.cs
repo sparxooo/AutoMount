@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,7 @@ using System.Windows.Controls;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
+using System.Threading;
 
 namespace PNAutoMounter
 {
@@ -16,7 +18,9 @@ namespace PNAutoMounter
         internal static ILogger Log;
         internal static IPlayniteAPI API;
         internal static AutoMounter Plugin;
-        internal DiskImage currentImage;
+
+        internal BaseDiskMounter currentImage;
+
         public UserControl SettingsView
         {
             get => new AutoMounterSettingsView();
@@ -60,9 +64,9 @@ namespace PNAutoMounter
         }
 
         public void OnGameStarting(Game game)
-        {
+        {            
             // Will need to mount disk image in this section.
-            // Plugin is dumb at this point, if an ISO image is present, platform is PC, and the Game ActionType is File we will mount it...
+            // Plugin is dumb at this point, if a disk image is present, platform is PC, and the Game ActionType is File we will mount it...
 
             // Get Platform. There is probably a better way to do this
             bool isPC = false;
@@ -72,40 +76,44 @@ namespace PNAutoMounter
 
             if (game.PlayAction != null && game.PlayAction.Type == GameActionType.File && isPC)
             {
-                Log.Info(String.Format("AutoMounter: Game {0} starting, is \"File\" ActionType, looking for ISO", game.Name));
+                LogInfo($"Game {game.Name} starting, is \"File\" ActionType, looking for disk image");
                 // Get Game Image Path
                 string isoImageName = game.GameImagePath;
-                if (isoImageName != null && Path.GetExtension(isoImageName) == ".iso")
+                if (isoImageName != null)
                 {
-                    // Found iso image, does File exist?
-                    if (File.Exists(isoImageName))
+                    string fileExtension = Path.GetExtension(isoImageName).ToLower();
+                    if (fileExtension == ".iso" || fileExtension == ".cue" || fileExtension == ".bin")
                     {
-                        // Exists
-                        Log.Info(String.Format("AutoMounter: Mounting ISO for {0}", game.Name));
-                        MountGameImage(game.GameImagePath);
-                    }
-                    else
-                    {
-                        Log.Info(String.Format("AutoMounter: {0} has an ISO listed, but image doesn't appear to exist on disk", game.Name));
+                        // Found iso image, does File exist?
+                        if (File.Exists(isoImageName))
+                        {
+                            // Exists
+                            LogInfo($"Mounting ISO for {game.Name}");
+                            MountGameImage(game.GameImagePath);
+                        }
+                        else
+                        {
+                            LogInfo($"{game.Name} has an ISO listed, but image doesn't appear to exist on disk");
+                        }
                     }
                 }
                 else
                 {
-                    Log.Info(String.Format("AutoMounter: No ISO found for Game: {0}", game.Name));
+                    LogInfo($"No disk image found for Game: {game.Name}");
                 }
             }
             else
             {
-                Log.Info(String.Format("AutoMounter: Not mounting image for Game {0}", game.Name));
+                LogInfo(String.Format("AutoMounter: Not mounting image for Game {0}", game.Name));
 
             }
         }
 
         public void OnGameStopped(Game game, long ellapsedSeconds)
         {
-            if (currentImage != null && currentImage.IsMounted() == true)
+            if (currentImage != null && currentImage.IsCurrentDiskImageMounted() == true)
             {
-                UnmountGameImage(game);
+                UnmountGameImage();
             }
         }
 
@@ -116,19 +124,44 @@ namespace PNAutoMounter
 
         public void MountGameImage(string imagePath)
         {
-            if (currentImage != null && currentImage.IsMounted())
+            if (currentImage != null && currentImage.IsCurrentDiskImageMounted())
             {
-                currentImage.Unmount();
+                UnmountGameImage();
             }
 
-            currentImage = new DiskImage(imagePath);
-            currentImage.Mount(((AutoMountSettings)Settings).AssignedDriveLetter);
+            CDMountingEngine engine = ( (AutoMountSettings)Settings ).Engine;
+            switch (engine)
+            {
+                case CDMountingEngine.WinCDEmu:
+                    currentImage = new WCDEDisk(imagePath);
+                    break;
+                case CDMountingEngine.WinVirtDisk:
+                    currentImage = new WinVirtDisk(imagePath);
+                    break;
+            }
+
+
+            currentImage.RequestedDriveLetter = ( (AutoMountSettings)Settings ).AssignedDriveLetter;
+            currentImage.MountDiskImage();
         }
 
-        public void UnmountGameImage(Game game)
+        public void UnmountGameImage()
         {
-            currentImage.Unmount();
-            currentImage = null;
+            if (currentImage != null)
+            {
+                currentImage.UnmountCurrentDiskImage();
+                currentImage = null;
+            }
+        }
+
+        public void LogInfo(string message)
+        {
+            Log.Info($"AutoMounter: {message}");
+        }
+
+        public void LogError(string message)
+        {
+            Log.Error($"AutoMounter: {message}");
         }
 
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,9 +15,11 @@ namespace PNAutoMounter
         /// Default drive letter, Z:\ as furthest away from auto-assigned letters
         /// Should contain ending slash
         /// </summary>
-        [JsonProperty]
-        public string AssignedDriveLetter { get; set; } = "Z:\\";
-        
+
+        public string AssignedDriveLetter { get; set; } = "Z:";
+        public CDMountingEngine Engine { get; set; } = CDMountingEngine.WinCDEmu; // Use WinCDEmu as default
+        public string WinCDEmuLocation { get; set; } = @"C:\Program Files(x86)\wincdemu\batchmnt.exe";
+
         private IPlayniteAPI api;
         private AutoMounter plugin;
 
@@ -39,6 +42,8 @@ namespace PNAutoMounter
             if (savedSettings != null)
             {
                 AssignedDriveLetter = savedSettings.AssignedDriveLetter;
+                Engine = savedSettings.Engine;
+                WinCDEmuLocation = savedSettings.WinCDEmuLocation;
             }
         }
 
@@ -56,7 +61,7 @@ namespace PNAutoMounter
         public void EndEdit()
         {
             // Code executed when user decides to confirm changes made since BeginEdit was called.
-         
+
             api.SavePluginSettings(plugin, this);
         }
 
@@ -70,17 +75,24 @@ namespace PNAutoMounter
             // Should probably check if any image is mounted before we do this, and if so, unmount
             errors = new List<string>();
 
-            if( AutoMountHelpers.IsDriveLetterFree(AssignedDriveLetter) )
-            {
-                // is free!
-                return true;
-            }
-            else
+            // Unmount game image
+            AutoMounter.Plugin.UnmountGameImage();
+
+            if (!AutoMountHelpers.IsDriveLetterFree(AssignedDriveLetter))
             {
                 errors.Add("Assigned Drive Letter is not free...");
-                return false;
             }
 
+            if (Engine == CDMountingEngine.WinCDEmu && !File.Exists(WinCDEmuLocation))
+            {
+                errors.Add("Location of WinCDEmu incorrect");
+            }
+
+
+            if (errors.Count() > 0)
+                return false;
+            else
+                return true;
         }
     }
 }

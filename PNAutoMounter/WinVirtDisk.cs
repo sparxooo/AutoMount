@@ -15,28 +15,33 @@ namespace PNAutoMounter
     /// <summary>
     /// Class to manage mounting of disk images
     /// </summary>
-    class DiskImage : IDisposable
+    class WinVirtDisk : BaseDiskMounter
     {
-        string imageFile = "";
         SafeFileHandle mountedHandle = null;
 
-        public DiskImage(string imageFile)
+        public WinVirtDisk(string imageFile)
         {
-            this.imageFile = imageFile;
+            DiskImage = imageFile;
         }
 
-        public bool Mount(string driveLetter)
+        public override bool MountDiskImage()
         {
-            // Check file exists! Probably should return some nice error message...
-            if (!File.Exists(imageFile))
+            if( Path.GetExtension(DiskImage).ToLower() != ".iso")
             {
-                AutoMounter.Log.Info(String.Format("AutoMounter: Failed to open ISO as VirtualDisk, ISO does not exist on disk {0}", imageFile));
+                AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to open ISO as VirtualDisk, not an ISO - {DiskImage}");
                 return false;
             }
 
-            if (!AutoMountHelpers.IsDriveLetterFree(driveLetter))
+            // Check file exists! Probably should return some nice error message...
+            if (!File.Exists(DiskImage))
             {
-                AutoMounter.Log.Info(String.Format("AutoMounter: Failed to open ISO as VirtualDisk, Drive Letter in use {0}", driveLetter));
+                AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to open ISO as VirtualDisk, ISO does not exist on disk {DiskImage}");
+                return false;
+            }
+
+            if (!AutoMountHelpers.IsDriveLetterFree(RequestedDriveLetter))
+            {
+                AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to open ISO as VirtualDisk, Drive Letter in use {RequestedDriveLetter}");
                 AutoMounter.API.Dialogs.ShowErrorMessage("Failed to open ISO as VirtualDisk, Drive Letter is in use", "AutoMounter");
                 return false;
             }
@@ -45,7 +50,7 @@ namespace PNAutoMounter
             VirtDisk.VIRTUAL_STORAGE_TYPE type = new VirtDisk.VIRTUAL_STORAGE_TYPE(VirtDisk.VIRTUAL_STORAGE_TYPE_DEVICE_TYPE.VIRTUAL_STORAGE_TYPE_DEVICE_ISO);
             Win32Error error = VirtDisk.OpenVirtualDisk(
                                                         ref type,
-                                                        imageFile,
+                                                        DiskImage,
                                                         VirtDisk.VIRTUAL_DISK_ACCESS_MASK.VIRTUAL_DISK_ACCESS_READ,
                                                         VirtDisk.OPEN_VIRTUAL_DISK_FLAG.OPEN_VIRTUAL_DISK_FLAG_NONE,
                                                         null,
@@ -68,38 +73,38 @@ namespace PNAutoMounter
                 if (error.Succeeded)
                 {
                     // Try and assign the requested drive letter to the mounted image
-                    if (AssignDriveLetter(driveLetter, mountedHandle))
+                    if (AssignDriveLetter(RequestedDriveLetter, mountedHandle))
                     {
                         return true;
                     }
                     else
                     {
-                        AutoMounter.Log.Info(String.Format("AutoMounter: Failed to open ISO as VirtualDisk, Unable to mount to drive letter {0}", driveLetter));
+                        AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to open ISO as VirtualDisk, Unable to mount to drive letter {RequestedDriveLetter}");
                         AutoMounter.API.Dialogs.ShowErrorMessage("Failed to open ISO as VirtualDisk, Unable to mount to assigned drive letter", "AutoMounter");
-                        Unmount();
+                        UnmountCurrentDiskImage();
                         return false;
                     }
 
                 }
                 else
                 {
-                    AutoMounter.Log.Info(String.Format("AutoMounter: Failed to open ISO as VirtualDisk {0}, AttachVirtualDisk Fail", error.ToString()));
+                    AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to open ISO as VirtualDisk {error.ToString()}, AttachVirtualDisk Fail");
                     AutoMounter.API.Dialogs.ShowErrorMessage("Failed to open ISO as VirtualDisk, AttachVirtualDisk Fail", "AutoMounter");
-                    Unmount();
+                    UnmountCurrentDiskImage();
                     return false;
                 }
 
             }
             else
             {
-                AutoMounter.Log.Info(String.Format("AutoMounter: Failed to open ISO as VirtualDisk {0}, OpenVirtualDisk Fail", error.ToString()));
+                AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to open ISO as VirtualDisk {error.ToString()}, OpenVirtualDisk Fail");
                 AutoMounter.API.Dialogs.ShowErrorMessage("Failed to open ISO as VirtualDisk, OpenVirtualDisk Fail", "AutoMounter");
-                Unmount();
+                UnmountCurrentDiskImage();
                 return false;
             }
         }
 
-        internal bool IsMounted()
+        public override bool IsCurrentDiskImageMounted()
         {
             if (mountedHandle == null)
                 return false;
@@ -152,12 +157,14 @@ namespace PNAutoMounter
             srchHandle.Close();
             // volumeName is now our mounted CDROM drive
 
-
+            // WinAPI requires backslash on back of drive letter
+            if (!driveLetter.Contains("\\"))
+                driveLetter += "\\";
 
             bool mounted = Kernel32.SetVolumeMountPoint(driveLetter, volumeName.Append("\\").ToString());
             if (mounted)
             {
-                AutoMounter.Log.Info(String.Format("AutoMounter: Mounted ISO to {0} on device {1}", driveLetter, volumeName));
+                AutoMounter.Plugin.LogInfo($"WinVirtDisk: Mounted ISO to {driveLetter} on device {volumeName}");
                 return true;
             }
             else
@@ -167,7 +174,7 @@ namespace PNAutoMounter
             }
         }
 
-        public bool Unmount()
+        public override bool UnmountCurrentDiskImage()
         {
             if (mountedHandle != null)
             {
@@ -175,7 +182,7 @@ namespace PNAutoMounter
 
                 if (error.Failed)
                 {
-                    AutoMounter.Log.Info(String.Format("AutoMounter: Failed to unmount disk from system {0}, {1}", mountedHandle.ToString(), error.ToString()));
+                    AutoMounter.Plugin.LogInfo($"WinVirtDisk: Failed to unmount disk from system {mountedHandle.ToString()}, {error.ToString()}");
                     AutoMounter.API.Dialogs.ShowErrorMessage("Failed to unmount disk from system", "AutoMounter");
                 }
                 mountedHandle.Close();
@@ -183,11 +190,16 @@ namespace PNAutoMounter
             }
             return true;
         }
-
-        public void Dispose()
+     
+        public override bool MountNewDiskImage(string imageName)
         {
-            // Ensure unmount before disposal
-            Unmount();
+            DiskImage = imageName;
+            return MountDiskImage();
+        }
+
+        public override bool IsRequestedDriveLetterAvailable()
+        {
+            return AutoMountHelpers.IsDriveLetterFree(RequestedDriveLetter);
         }
     }
 
