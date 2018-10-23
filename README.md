@@ -24,5 +24,5 @@ The project will automatically attempt to copy the whole build directory to %App
 
 
 # References
-Uses the Vanara PInvoke library (https://github.com/dahall/Vanara/)
-Majority of ISO mounting code (and the workaround to find and manually assign a drive letter) derived from Pixy's answer (https://stackoverflow.com/questions/24396644/)
+* Uses the Vanara PInvoke library (https://github.com/dahall/Vanara/)
+* Majority of WinAPI ISO mounting code (and the workaround to find and manually assign a drive letter) derived from Pixy's answer (https://stackoverflow.com/questions/24396644/)
