@@ -62,8 +62,15 @@ namespace PNAutoMounter
         public void OnGameStarting(Game game)
         {
             // Will need to mount disk image in this section.
-            // Plugin is dumb at this point, and if an ISO image is present and the Game ActionType is File we will mount it...
-            if (game.PlayAction != null && game.PlayAction.Type == GameActionType.File)
+            // Plugin is dumb at this point, if an ISO image is present, platform is PC, and the Game ActionType is File we will mount it...
+
+            // Get Platform. There is probably a better way to do this
+            bool isPC = false;
+            Platform gamePlatform = API.Database.GetPlatform(game.PlatformId);
+            if (gamePlatform != null && gamePlatform.Name == "PC")
+            { isPC = true; }
+
+            if (game.PlayAction != null && game.PlayAction.Type == GameActionType.File && isPC)
             {
                 Log.Info(String.Format("AutoMounter: Game {0} starting, is \"File\" ActionType, looking for ISO", game.Name));
                 // Get Game Image Path
@@ -75,7 +82,7 @@ namespace PNAutoMounter
                     {
                         // Exists
                         Log.Info(String.Format("AutoMounter: Mounting ISO for {0}", game.Name));
-                        MountGameImage(game);
+                        MountGameImage(game.GameImagePath);
                     }
                     else
                     {
@@ -107,16 +114,18 @@ namespace PNAutoMounter
 
         }
 
-        private void MountGameImage(Game game)
+        public void MountGameImage(string imagePath)
         {
-            if (currentImage == null || currentImage.IsMounted())
+            if (currentImage != null && currentImage.IsMounted())
             {
-                currentImage = new DiskImage(game.GameImagePath);
-                currentImage.Mount(((AutoMountSettings)Settings).AssignedDriveLetter);
+                currentImage.Unmount();
             }
+
+            currentImage = new DiskImage(imagePath);
+            currentImage.Mount(((AutoMountSettings)Settings).AssignedDriveLetter);
         }
 
-        private void UnmountGameImage(Game game)
+        public void UnmountGameImage(Game game)
         {
             currentImage.Unmount();
             currentImage = null;

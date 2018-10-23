@@ -58,5 +58,19 @@ namespace PNAutoMounter
                 }               
             }
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            // Open file browse dialog
+            string imageFile = AutoMounter.API.Dialogs.SelectFile("ISO Image|*.iso");
+            if(imageFile != "")
+            {
+                AutoMounter.Plugin.MountGameImage(imageFile);
+            }
+            else
+            {
+                AutoMounter.API.Dialogs.ShowErrorMessage("No image file selected", "No Image Selected");
+            }
+        }
     }
 }

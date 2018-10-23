@@ -13,10 +13,9 @@
         </Style>
     </d:DesignerProperties.DesignStyle>
     <StackPanel>
-        <TextBlock ><Run Text="Assigned Drive Letter:"/><InlineUIContainer>
-        <ComboBox x:Name="ComboAssignedDrive" SelectionChanged="ComboAssignedDrive_SelectionChanged" />
-            </InlineUIContainer>
-        </TextBlock>
+        <TextBlock Margin="0 10 0 0"><Run Text="Assigned Drive Letter:"/><InlineUIContainer>
+                <ComboBox Margin="10 -5" x:Name="ComboAssignedDrive" SelectionChanged="ComboAssignedDrive_SelectionChanged" />
+            </InlineUIContainer> <InlineUIContainer> <Button Name="MountISOBrowse"  Margin="10 -5" Content="Mount ISO (Browse)" Click="Button_Click" /></InlineUIContainer></TextBlock>
         <TextBlock Margin="0 10 0 0" FontSize="14">
             Important Information: 
         </TextBlock>
