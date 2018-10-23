@@ -3,7 +3,7 @@ PlayNite Automount Plugin
 
 This plugin was a quick mockup to see how easy it would be to add disk image auto mounting to PlayNite (https://github.com/JosefNemec/Playnite/)
 
-The plugin uses the Windows Virtual Disk API to mount the ISO file, so will only function on **Windows 8 and above**. Unfortunately the Windows API also **restricts ISO mounting to programs run as UAC Adminstrator. **
+The plugin uses the Windows Virtual Disk API to mount the ISO file, so will only function on **Windows 8 and above**. Unfortunately the Windows API also **restricts ISO mounting to programs run as UAC Adminstrator.**
 
 The plugin will attempt to mount an ISO for any game that has a "Platform" set as PC, and an Action of "Executable", and it attempts to always mount the disk to the set drive letter (in settings). If the drive letter is not free, mounting will fail.
 
